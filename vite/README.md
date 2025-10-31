@@ -1,73 +1,105 @@
-# React + TypeScript + Vite
+# initd.ai
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Getting started
 
-Currently, two official plugins are available:
+To get started with this project, follow these steps:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/initd-ai/tutorials.git
+    cd tutorials/vite
+    ```
 
-## React Compiler
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+3.  **Set up environment variables:**
+    Create a `.env.local` file in the root of your project and add the following variables. You will need to obtain `VITE_INITDAI_PUBLIC_ACCESS_TOKEN` from your initd.ai dashboard.
 
-## Expanding the ESLint configuration
+    ```
+    VITE_INITDAI_GUEST_SESSION_URL=https://j74oaemotd.execute-api.ap-southeast-1.amazonaws.com/prod/webapp
+    VITE_INITDAI_HTTP_URL=https://b4c12rdlz8.execute-api.ap-southeast-1.amazonaws.com/prod
+    VITE_INITDAI_WS_URL=wss://84xkhsyda9.execute-api.ap-southeast-1.amazonaws.com/prod
+    VITE_INITDAI_PUBLIC_ACCESS_TOKEN=YOUR_PUBLIC_ACCESS_TOKEN
+    ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## API Documentation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+This project interacts with the InitD AI platform through a few key API endpoints.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 1. Guest Session Creation
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+-   `POST /guest`
+-   **URL:** https://j74oaemotd.execute-api.ap-southeast-1.amazonaws.com/prod/webapp
+-   **Description:** Creates a guest session, returning a `userId`, `token`, and `conversationId`. This is essential for subsequent API calls.
+-   **Request Body:**
+    ```json
+    {
+        "deviceId": "string", // Unique identifier for the device
+        "publicAccessToken": "string" // Obtained from initd.ai dashboard
+    }
+    ```
+-   **Response Body (Example):**
+    ```json
+    {
+        "conversationId": "string",
+        "session": {
+            "id": "string",
+            "expiresAt": "number",
+            "scope": ["string"],
+            "rate": { "perMin": "number", "perDay": "number" },
+            "ai": { "maxTokensPerDay": "number", "maxContext": "number" }
+        },
+        "token": "string"
+    }
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 2. Send Message to AI Agent
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+-   `POST /platforms/webapp/message`
+-   **URL:** https://b4c12rdlz8.execute-api.ap-southeast-1.amazonaws.com/prod
+-   **Description:** Sends a user message to the InitD AI agent within a specific conversation.
+-   **Request Body:**
+    ```json
+    {
+        "publicAccessToken": "string", // Obtained from initd.ai dashboard
+        "content": [
+            {
+                "type": "text",
+                "text": "string" // The user's message
+            }
+        ],
+        "endUserId": "string", // From guest session (session.id)
+        "conversationId": "string" // From guest session
+    }
+    ```
+-   **Response:** (Typically a 200 OK status, messages are received via WebSocket)
+
+### 3. WebSocket for Receiving Messages
+
+-   **URL:** wss://84xkhsyda9.execute-api.ap-southeast-1.amazonaws.com/prod
+-   **Description:** Used to receive real-time messages from the AI agent. The `useWebsocket` hook handles this connection.
+-   **Payload (Example - `receive_message` type):**
+    ```json
+    {
+        "type": "receive_message",
+        "data": {
+            "id": "string",
+            "content": [{ "type": "text", "text": "string" }],
+            "conversationId": "string",
+            "type": "agent" | "human",
+            "timestamp": "string"
+        }
+    }

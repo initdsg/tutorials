@@ -1,4 +1,4 @@
-# initd.ai
+# initd.ai Next.js Tutorial
 
 ## Getting started
 
@@ -7,7 +7,7 @@ To get started with this project, follow these steps:
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/initd-ai/tutorials.git
-    cd tutorials
+    cd tutorials/nextjs
     ```
 
 2.  **Install dependencies:**
