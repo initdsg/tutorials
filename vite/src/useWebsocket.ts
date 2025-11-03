@@ -12,8 +12,8 @@ const WS_ENDPOINT = import.meta.env.VITE_INITDAI_WS_URL!;
 export function useWebsocket(session?: Session) {
     const wsEndpoint = session
         ? `${WS_ENDPOINT}?token=${encodeURIComponent(
-              session?.token
-          )}&userId=${encodeURIComponent(session?.id)}`
+              session.token
+          )}&userId=${encodeURIComponent(session.id)}`
         : "wss://";
 
     const websocket = useBaseWebSocket(
